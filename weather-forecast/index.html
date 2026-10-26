@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Weather Forecast Application using JavaScript Fetch API and OpenWeatherMap">
+  <title>Weather Forecast Application using Fetch API</title>
+
+  <!-- Google Fonts: Inter & Poppins -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome Icons for Weather and UI Indicators -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- External Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="weather-default">
+
+  <!-- Background Animated Glow Overlays -->
+  <div class="bg-shape shape-1"></div>
+  <div class="bg-shape shape-2"></div>
+  <div class="bg-shape shape-3"></div>
+
+  <!-- Main Container -->
+  <div class="app-container">
+
+    <!-- Top Utility Bar (API Key helper & Unit switch) -->
+    <div class="top-nav">
+      <div class="nav-brand">
+        <i class="fa-solid fa-cloud-sun-rain"></i>
+        <span>WeatherFetch</span>
+      </div>
+      <div class="nav-actions">
+        <!-- Temperature Unit Toggle -->
+        <div class="unit-toggle" id="unit-toggle" title="Toggle °C / °F">
+          <button type="button" class="unit-btn active" id="btn-celsius">°C</button>
+          <button type="button" class="unit-btn" id="btn-fahrenheit">°F</button>
+        </div>
+        <!-- API Key Configuration Modal Trigger -->
+        <button type="button" class="api-key-btn" id="api-key-trigger" title="Configure OpenWeatherMap API Key">
+          <i class="fa-solid fa-key"></i>
+          <span id="api-status-badge">API Key</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Application Header -->
+    <header class="app-header">
+      <h1 class="main-title">Weather Forecast Application</h1>
+      <p class="subtitle">Real-time weather information using Fetch API</p>
+    </header>
+
+    <!-- Search Section -->
+    <section class="search-section glass-panel">
+      <form id="search-form" class="search-form" role="search" onsubmit="return false;">
+        <div class="input-group">
+          <i class="fa-solid fa-magnifying-glass search-icon"></i>
+          <input 
+            type="text" 
+            id="city-input" 
+            placeholder="Enter city name (e.g., London, Tokyo, New York)..." 
+            autocomplete="off"
+            aria-label="City Name"
+            required
+          >
+          <button type="button" id="clear-input-btn" class="clear-btn" aria-label="Clear input" style="display: none;">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="button-group">
+          <button type="submit" id="search-btn" class="btn btn-primary">
+            <i class="fa-solid fa-search"></i>
+            <span>Search Weather</span>
+          </button>
+          <button type="button" id="location-btn" class="btn btn-secondary" title="Use current GPS location">
+            <i class="fa-solid fa-location-crosshairs"></i>
+            <span>Use My Location</span>
+          </button>
+        </div>
+      </form>
+
+      <!-- Quick Suggestion City Chips -->
+      <div class="quick-cities">
+        <span class="quick-label"><i class="fa-solid fa-bolt"></i> Popular:</span>
+        <div class="chips-list">
+          <button type="button" class="chip" data-city="London">London</button>
+          <button type="button" class="chip" data-city="New York">New York</button>
+          <button type="button" class="chip" data-city="Tokyo">Tokyo</button>
+          <button type="button" class="chip" data-city="Paris">Paris</button>
+          <button type="button" class="chip" data-city="Mumbai">Mumbai</button>
+          <button type="button" class="chip" data-city="Sydney">Sydney</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Loading State Indicator -->
+    <div id="loading-state" class="loading-state glass-panel" style="display: none;">
+      <div class="spinner"></div>
+      <p class="loading-text">Fetching weather data...</p>
+      <span class="loading-subtext">Contacting OpenWeatherMap API using Fetch API</span>
+    </div>
+
+    <!-- Error Message Display -->
+    <div id="error-message" class="error-message glass-panel" style="display: none;">
+      <div class="error-icon">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <div class="error-content">
+        <h3 id="error-title">City not found</h3>
+        <p id="error-desc">City not found. Please enter a valid city name.</p>
+      </div>
+      <button type="button" id="close-error-btn" class="close-error" aria-label="Close error message">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- Weather Content Dashboard (Shown once data is fetched) -->
+    <main id="weather-dashboard" class="weather-dashboard" style="display: none;">
+
+      <!-- Current Weather Card -->
+      <section class="current-weather-card glass-panel" id="current-weather-section">
+        <div class="card-top-row">
+          <div class="location-info">
+            <h2 class="city-name" id="city-name">London, GB</h2>
+            <p class="current-date" id="current-date">Thursday, October 22, 2026</p>
+          </div>
+          <div class="condition-badge" id="condition-badge">
+            <span id="condition-text">Clear Sky</span>
+          </div>
+        </div>
+
+        <div class="main-weather-row">
+          <div class="temp-display">
+            <div class="temp-value-wrapper">
+              <span class="temp-number" id="current-temp">18</span>
+              <span class="temp-unit" id="current-unit">°C</span>
+            </div>
+            <p class="weather-desc" id="weather-desc">Scattered Clouds</p>
+          </div>
+
+          <div class="icon-display">
+            <img id="weather-icon" src="" alt="Weather Icon" class="main-weather-icon">
+          </div>
+        </div>
+
+        <!-- 5 Essential Weather Details -->
+        <div class="weather-details-grid">
+          <!-- Feels Like -->
+          <div class="detail-card">
+            <div class="detail-icon icon-thermo">
+              <i class="fa-solid fa-temperature-three-quarters"></i>
+            </div>
+            <div class="detail-meta">
+              <span class="detail-label">Feels Like</span>
+              <span class="detail-value" id="feels-like">--</span>
+            </div>
+          </div>
+
+          <!-- Humidity -->
+          <div class="detail-card">
+            <div class="detail-icon icon-humidity">
+              <i class="fa-solid fa-droplet"></i>
+            </div>
+            <div class="detail-meta">
+              <span class="detail-label">Humidity</span>
+              <span class="detail-value" id="humidity">--</span>
+            </div>
+          </div>
+
+          <!-- Wind Speed -->
+          <div class="detail-card">
+            <div class="detail-icon icon-wind">
+              <i class="fa-solid fa-wind"></i>
+            </div>
+            <div class="detail-meta">
+              <span class="detail-label">Wind Speed</span>
+              <span class="detail-value" id="wind-speed">--</span>
+            </div>
+          </div>
+
+          <!-- Atmospheric Pressure -->
+          <div class="detail-card">
+            <div class="detail-icon icon-pressure">
+              <i class="fa-solid fa-gauge-high"></i>
+            </div>
+            <div class="detail-meta">
+              <span class="detail-label">Pressure</span>
+              <span class="detail-value" id="pressure">--</span>
+            </div>
+          </div>
+
+          <!-- Visibility -->
+          <div class="detail-card">
+            <div class="detail-icon icon-visibility">
+              <i class="fa-solid fa-eye"></i>
+            </div>
+            <div class="detail-meta">
+              <span class="detail-label">Visibility</span>
+              <span class="detail-value" id="visibility">--</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5-Day Forecast Section -->
+      <section class="forecast-section" id="forecast-section">
+        <div class="section-heading">
+          <i class="fa-solid fa-calendar-days"></i>
+          <h3>5-Day Forecast</h3>
+        </div>
+
+        <div class="forecast-cards-container" id="forecast-container">
+          <!-- Forecast cards will be dynamically generated by script.js -->
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Initial Welcome / Empty State Placeholder -->
+    <div id="welcome-state" class="welcome-state glass-panel">
+      <div class="welcome-icon">
+        <i class="fa-solid fa-compass"></i>
+      </div>
+      <h2>Explore Real-Time Global Weather</h2>
+      <p>Enter any city name above or click <strong>“Use My Location”</strong> to fetch live weather conditions and a 5-day forecast using the JavaScript Fetch API.</p>
+    </div>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p class="footer-title">Weather Forecast Application</p>
+      <p class="footer-subtitle">Built using HTML, CSS, JavaScript &amp; Fetch API</p>
+      <div class="footer-meta">
+        <span><i class="fa-solid fa-graduation-cap"></i> College Mini-Project Demonstration</span>
+        <span class="separator">•</span>
+        <span><i class="fa-solid fa-cloud"></i> OpenWeatherMap 2.5 API</span>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- API Key Settings Modal (Allows entering API key directly without modifying code) -->
+  <div id="api-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-box glass-panel">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-key"></i>
+          <h3>OpenWeatherMap API Key</h3>
+        </div>
+        <button type="button" id="close-modal-btn" class="modal-close" aria-label="Close modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">
+          To fetch live weather data, enter your free OpenWeatherMap API key below. You can also specify it in <code>script.js</code> under <code>API_KEY</code>.
+        </p>
+        <div class="modal-input-group">
+          <label for="modal-api-key-input">Your API Key:</label>
+          <input 
+            type="text" 
+            id="modal-api-key-input" 
+            placeholder="Paste your 32-character API key here..."
+            autocomplete="off"
+          >
+        </div>
+        <div class="modal-help">
+          <p><i class="fa-solid fa-circle-info"></i> How to get a free API key:</p>
+          <ol>
+            <li>Go to <a href="https://openweathermap.org/" target="_blank" rel="noopener">openweathermap.org</a> and sign up for free.</li>
+            <li>Go to your profile &rarr; <strong>API keys</strong>.</li>
+            <li>Copy your key and paste it here or into <code>script.js</code>.</li>
+          </ol>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="save-api-key-btn" class="btn btn-primary">Save Key</button>
+        <button type="button" id="clear-api-key-btn" class="btn btn-secondary">Reset to Default</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- External JavaScript -->
+  <script src="script.js"></script>
+</body>
+</html>
